@@ -90,33 +90,58 @@ for i in range(x.shape[0]):
 
 sat = None
 # cardinality constraint
-k = 5
+k1 = 5
+k2 = 4
 n = x.shape[1]
-S = []
+S1 = []
+S2 = []
 for i in range(n):
-    sub_S = []
-    for j in range(k):
-        sub_S.append(exprvar('S_' + str(i+1)+str(j+1)))
-    S.append(sub_S)
+    sub_S1 = []
+    sub_S2 = []
+    for j in range(5):
+        sub_S1.append(exprvar('S1_' + str(i+1)+str(j+1)))
+    for j in range(5):
+        sub_S2.append(exprvar('S2_' + str(i+1)+str(j+1)))
+    S1.append(sub_S1)
+    S2.append(sub_S2)
 
-clauses.append(Or(Xor(features_Z1[0], features_Z2[0]), Not(S[0][0])))
-clauses.append(Or(Not(Xor(features_Z1[0], features_Z2[0])), S[0][0]))
-for j in range(1, k):
-    clauses.append(Not(S[0][j]))
+clauses.append(Or(Not(features_Z1[0]), Not(S1[0][0])))
+clauses.append(Or(features_Z1[0], S1[0][0]))
+for j in range(1, k1):
+    clauses.append(Not(S1[0][j]))
 for i in range(1, n):
-    clauses.append(Or(Not(Xor(features_Z1[i], features_Z2[i])), Not(S[i-1][k-1])))
+    clauses.append(Or(features_Z1[i], Not(S1[i-1][k1-1])))
 for i in range(1, n-1):
-    clauses.append(Or(Xor(features_Z1[i], features_Z2[i]), S[i-1][0], Not(S[i][0])))
-    clauses.append(Or(Not(Xor(features_Z1[i], features_Z2[i])), S[i][0]))
-    clauses.append(Or(Not(S[i-1][0]), S[i][0]))
+    clauses.append(Or(Not(features_Z1[i]), S1[i-1][0], Not(S1[i][0])))
+    clauses.append(Or(features_Z1[i], S1[i][0]))
+    clauses.append(Or(Not(S1[i-1][0]), S1[i][0]))
 for i in range(1, n-1):
-    for j in range(1, k):
-        clauses.append(Or(Xor(features_Z1[i], features_Z2[i]), S[i-1][j], Not(S[i][j])))
-        clauses.append(Or(S[i-1][j-1], S[i-1][j], Not(S[i][j])))
-        clauses.append(Or(Not(S[i-1][j]), S[i][j]))
-        clauses.append(Or(Not(Xor(features_Z1[i], features_Z2[i])), Not(S[i-1][j-1]), S[i][j]))
-clauses.append(Or(Xor(features_Z1[n-1], features_Z2[n-1]), S[n-2][k-1]))
-clauses.append(Or(S[n-2][k-2], S[n-2][k-1]))
+    for j in range(1, k1):
+        clauses.append(Or(Not(features_Z1[i]), S1[i-1][j], Not(S1[i][j])))
+        clauses.append(Or(S1[i-1][j-1], S1[i-1][j], Not(S1[i][j])))
+        clauses.append(Or(Not(S1[i-1][j]), S1[i][j]))
+        clauses.append(Or(features_Z1[i], Not(S1[i-1][j-1]), S1[i][j]))
+clauses.append(Or(Not(features_Z1[n-1]), S1[n-2][k1-1]))
+clauses.append(Or(S1[n-2][k1-2], S1[n-2][k1-1]))
+
+clauses.append(Or(Not(features_Z2[0]), Not(S2[0][0])))
+clauses.append(Or(features_Z2[0], S2[0][0]))
+for j in range(1, k2):
+    clauses.append(Not(S2[0][j]))
+for i in range(1, n):
+    clauses.append(Or(features_Z2[i], Not(S2[i-1][k2-1])))
+for i in range(1, n-1):
+    clauses.append(Or(Not(features_Z2[i]), S2[i-1][0], Not(S2[i][0])))
+    clauses.append(Or(features_Z2[i], S2[i][0]))
+    clauses.append(Or(Not(S2[i-1][0]), S2[i][0]))
+for i in range(1, n-1):
+    for j in range(1, k2):
+        clauses.append(Or(Not(features_Z2[i]), S2[i-1][j], Not(S2[i][j])))
+        clauses.append(Or(S2[i-1][j-1], S2[i-1][j], Not(S2[i][j])))
+        clauses.append(Or(Not(S2[i-1][j]), S2[i][j]))
+        clauses.append(Or(features_Z2[i], Not(S2[i-1][j-1]), S2[i][j]))
+clauses.append(Or(Not(features_Z2[n-1]), S2[n-2][k2-1]))
+clauses.append(Or(S2[n-2][k2-2], S2[n-2][k2-1]))
 
 cnf = And(*clauses)
 sats = cnf.satisfy_one()
