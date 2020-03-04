@@ -16,12 +16,12 @@ features_P2 = []
 features_Z2 = []
 clauses = []
 for i in range(x.shape[1]):
-    N1 = exprvar('N1_'+str(i+1))
-    P1 = exprvar('P1_' + str(i+1))
-    Z1 = exprvar('Z1_' + str(i+1))
-    N2 = exprvar('N2_' + str(i+1))
-    P2 = exprvar('P2_' + str(i+1))
-    Z2 = exprvar('Z2_' + str(i+1))
+    N1 = exprvar('N1_'+str(i))
+    P1 = exprvar('P1_' + str(i))
+    Z1 = exprvar('Z1_' + str(i))
+    N2 = exprvar('N2_' + str(i))
+    P2 = exprvar('P2_' + str(i))
+    Z2 = exprvar('Z2_' + str(i))
     features_N1.append(N1)
     features_P1.append(P1)
     features_Z1.append(Z1)
@@ -90,18 +90,46 @@ for i in range(x.shape[0]):
 
 sat = None
 # cardinality constraint
-k1 = 5
-k2 = 4
+k = 5
+n = x.shape[1]
+S = []
+for i in range(n):
+    sub_S = []
+    for j in range(k):
+        sub_S.append(exprvar('S_' + str(i)+str(j)))
+    S.append(sub_S)
+
+clauses.append(Or(Not(And(features_Z1[0], features_Z2[0])), Not(S[0][0])))
+clauses.append(Or(And(features_Z1[0], features_Z2[0]), S[0][0]))
+for j in range(1, k):
+    clauses.append(Not(S[0][j]))
+for i in range(1, n):
+    clauses.append(Or(And(features_Z1[i], features_Z2[i]), Not(S[i-1][k-1])))
+for i in range(1, n-1):
+    clauses.append(Or(Not(And(features_Z1[i], features_Z2[i])), S[i-1][0], Not(S[i][0])))
+    clauses.append(Or(And(features_Z1[i], features_Z2[i]), S[i][0]))
+    clauses.append(Or(Not(S[i-1][0]), S[i][0]))
+for i in range(1, n-1):
+    for j in range(1, k):
+        clauses.append(Or(Not(And(features_Z1[i], features_Z2[i])), S[i-1][j], Not(S[i][j])))
+        clauses.append(Or(S[i-1][j-1], S[i-1][j], Not(S[i][j])))
+        clauses.append(Or(Not(S[i-1][j]), S[i][j]))
+        clauses.append(Or(And(features_Z1[i], features_Z2[i]), Not(S[i-1][j-1]), S[i][j]))
+clauses.append(Or(Not(And(features_Z1[n-1], features_Z2[n-1])), S[n-2][k-1]))
+clauses.append(Or(S[n-2][k-2], S[n-2][k-1]))
+"""
+k1 = 3
+k2 = 3
 n = x.shape[1]
 S1 = []
 S2 = []
 for i in range(n):
     sub_S1 = []
     sub_S2 = []
-    for j in range(5):
-        sub_S1.append(exprvar('S1_' + str(i+1)+str(j+1)))
-    for j in range(5):
-        sub_S2.append(exprvar('S2_' + str(i+1)+str(j+1)))
+    for j in range(k1):
+        sub_S1.append(exprvar('S1_' + str(i)+str(j)))
+    for j in range(k2):
+        sub_S2.append(exprvar('S2_' + str(i)+str(j)))
     S1.append(sub_S1)
     S2.append(sub_S2)
 
@@ -142,12 +170,13 @@ for i in range(1, n-1):
         clauses.append(Or(features_Z2[i], Not(S2[i-1][j-1]), S2[i][j]))
 clauses.append(Or(Not(features_Z2[n-1]), S2[n-2][k2-1]))
 clauses.append(Or(S2[n-2][k2-2], S2[n-2][k2-1]))
+"""
 
 cnf = And(*clauses)
 sats = cnf.satisfy_one()
 
 if sats is None:
-    print("no monomial exists")
+    print("no 2-term DNF exists")
     exit()
 print(sats)
 
