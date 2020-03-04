@@ -88,9 +88,42 @@ for i in range(x.shape[0]):
         clauses.append(clause1)
         clauses.append(clause2)
 
+sat = None
+# cardinality constraint
+k = 5
+n = x.shape[1]
+S = []
+for i in range(n):
+    sub_S = []
+    for j in range(k):
+        sub_S.append(exprvar('S_' + str(i+1)+str(j+1)))
+    S.append(sub_S)
+
+clauses.append(Or(Xor(features_Z1[0], features_Z2[0]), Not(S[0][0])))
+clauses.append(Or(Not(Xor(features_Z1[0], features_Z2[0])), S[0][0]))
+for j in range(1, k):
+    clauses.append(Not(S[0][j]))
+for i in range(1, n):
+    clauses.append(Or(Not(Xor(features_Z1[i], features_Z2[i])), Not(S[i-1][k-1])))
+for i in range(1, n-1):
+    clauses.append(Or(Xor(features_Z1[i], features_Z2[i]), S[i-1][0], Not(S[i][0])))
+    clauses.append(Or(Not(Xor(features_Z1[i], features_Z2[i])), S[i][0]))
+    clauses.append(Or(Not(S[i-1][0]), S[i][0]))
+for i in range(1, n-1):
+    for j in range(1, k):
+        clauses.append(Or(Xor(features_Z1[i], features_Z2[i]), S[i-1][j], Not(S[i][j])))
+        clauses.append(Or(S[i-1][j-1], S[i-1][j], Not(S[i][j])))
+        clauses.append(Or(Not(S[i-1][j]), S[i][j]))
+        clauses.append(Or(Not(Xor(features_Z1[i], features_Z2[i])), Not(S[i-1][j-1]), S[i][j]))
+clauses.append(Or(Xor(features_Z1[n-1], features_Z2[n-1]), S[n-2][k-1]))
+clauses.append(Or(S[n-2][k-2], S[n-2][k-1]))
+
 cnf = And(*clauses)
-print(cnf)
 sats = cnf.satisfy_one()
+
+if sats is None:
+    print("no monomial exists")
+    exit()
 print(sats)
 
 s = 'f ='
@@ -98,7 +131,7 @@ s1 = ' '
 s2 = ' '
 for k in sats:
     name = str(k)
-    if sats[k] == 1 and name[0] != 'Z' and name[0] != 'A':
+    if sats[k] == 1 and name[0] != 'Z' and name[0] != 'A' and name[0] != 'S':
         if name[0] == 'P':
             if name[1] == '1':
                 s1 = s1 + 'x' + name[3:]

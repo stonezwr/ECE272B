@@ -49,50 +49,46 @@ for i in range(x.shape[0]):
                 clause = Or(clause, c)
         clauses.append(clause)
 
+# cardinality constraint
+k = 5
+n = l
+S = []
+for i in range(n):
+    sub_S = []
+    for j in range(k):
+        sub_S.append(exprvar('S_' + str(i+1)+str(j+1)))
+    S.append(sub_S)
+
+clauses.append(Or(Not(features_Z[0]), Not(S[0][0])))
+clauses.append(Or(features_Z[0], S[0][0]))
+for j in range(1, k):
+    clauses.append(Not(S[0][j]))
+for i in range(1, n):
+    clauses.append(Or(features_Z[i], Not(S[i-1][k-1])))
+for i in range(1, n-1):
+    clauses.append(Or(Not(features_Z[i]), S[i-1][0], Not(S[i][0])))
+    clauses.append(Or(features_Z[i], S[i][0]))
+    clauses.append(Or(Not(S[i-1][0]), S[i][0]))
+for i in range(1, n-1):
+    for j in range(1, k):
+        clauses.append(Or(Not(features_Z[i]), S[i-1][j], Not(S[i][j])))
+        clauses.append(Or(S[i-1][j-1], S[i-1][j], Not(S[i][j])))
+        clauses.append(Or(Not(S[i-1][j]), S[i][j]))
+        clauses.append(Or(features_Z[i], Not(S[i-1][j-1]), S[i][j]))
+clauses.append(Or(Not(features_Z[n-1]), S[n-2][k-1]))
+clauses.append(Or(S[n-2][k-2], S[n-2][k-1]))
+
 cnf = And(*clauses)
-sats = cnf.satisfy_count()
-print(sats)
-exit()
-sats = None
-found = 0
-for l1 in range(l):
-    if found == 1:
-        break
-    if l1 + 1 > l:
-        break
-    for l2 in range(l1+1, l):
-        if found == 1:
-            break
-        if l2 + 1 > l:
-            break
-        for l3 in range(l2 + 1, l):
-            if found == 1:
-                break
-            if l3 + 1 > l:
-                break
-            for l4 in range(l3 + 1, l):
-                if found == 1:
-                    break
-                if l4 + 1 > l:
-                    break
-                for l5 in range(l4 + 1, l):
-                    if found == 1:
-                        break
-                    z = []
-                    for i in range(l):
-                        if i != l1 and i != l2 and i != l3 and i != l4 and i != l5:
-                            z.append(features_Z[i])
-                    final_clauses = clauses + z
-                    cnf = And(*final_clauses)
-                    sats = cnf.satisfy_one()
-                    if sats is not None:
-                        found = 1
+sats = cnf.satisfy_one()
+if sats is None:
+    print("no monomial exists")
+    exit()
 
 print(sats)
 s = 'f = '
 for k in sats:
     name = str(k)
-    if sats[k] == 1 and name[0] != 'Z':
+    if sats[k] == 1 and name[0] != 'Z' and name[0] != 'S':
         if name[0] == 'P':
             s = s + 'x' + name[1:]
         else:
